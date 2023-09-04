@@ -23,4 +23,21 @@
 		<nature>org.eclipse.cdt.managedbuilder.core.managedBuildNature</nature>
 		<nature>org.eclipse.cdt.managedbuilder.core.ScannerConfigNature</nature>
 	</natures>
+	<linkedResources>
+		<link>
+			<name>projects</name>
+			<type>2</type>
+			<locationURI>virtual:/virtual</locationURI>
+		</link>
+		<link>
+			<name>sources</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/sources</locationURI>
+		</link>
+		<link>
+			<name>projects/makefile</name>
+			<type>2</type>
+			<locationURI>PARENT-1-PROJECT_LOC/makefile</locationURI>
+		</link>
+	</linkedResources>
 </projectDescription>
