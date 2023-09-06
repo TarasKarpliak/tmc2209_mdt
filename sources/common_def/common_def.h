@@ -31,12 +31,11 @@ typedef uint8_t bool_t;
 #endif
 
 #ifndef RESETBIT
-#define RESETBIT(REG, BIT_NUM)     ((REG) = ((REG) & (1u << (BIT_NUM))))
+#define RESETBIT(REG, BIT_NUM)     ((REG) = ((REG) & ~(1u << (BIT_NUM))))
 #endif
 
 #ifndef CHECKBIT
 #define CHECKBIT(REG, BIT_NUM)     (((REG) & (1u << (BIT_NUM))) != 0u)
 #endif
-
 
 #endif // COMMON_DEF_H
