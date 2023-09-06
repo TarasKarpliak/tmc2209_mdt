@@ -8,6 +8,14 @@
 #ifndef MAIN_PRIVATE_H
 #define MAIN_PRIVATE_H
 
+#include "sources/chip/chip.h"
+#include "stdint.h"
+
+
+// ------------------------------------------------------------------
+/// @brief
+//-------------------------------------------------------------------
+static void MAIN_Delay(void);
 
 
 #endif /* MAIN_PRIVATE_H */

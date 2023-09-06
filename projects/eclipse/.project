@@ -25,6 +25,11 @@
 	</natures>
 	<linkedResources>
 		<link>
+			<name>CMSIS</name>
+			<type>2</type>
+			<locationURI>PARENT-2-PROJECT_LOC/CMSIS</locationURI>
+		</link>
+		<link>
 			<name>projects</name>
 			<type>2</type>
 			<locationURI>virtual:/virtual</locationURI>
