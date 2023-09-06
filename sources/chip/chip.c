@@ -28,7 +28,7 @@ static void CHIP_ClockInit(void)
 // ------------------------------------------------------------------
 static void CHIP_GpioInit(void)
 {
-	GPIOB->MODER |= GPIO_MODER_MODER1_0;
+	GPIOB->MODER |= GPIO_MODER_MODER0_0;
 }
 
 

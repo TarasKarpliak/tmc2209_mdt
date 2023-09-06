@@ -9,6 +9,7 @@
 #define COMMON_DEF_H
 
 #include "stdint.h"
+#include "stm32f7xx.h"
 
 typedef uint8_t bool_t;
 

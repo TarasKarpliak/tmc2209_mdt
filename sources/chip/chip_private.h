@@ -9,7 +9,7 @@
 #define CHIP_PRIVATE_H
 
 #include "sources/chip/chip.h"
-#include "stm32f7xx.h"
+#include "sources/common_def/common_def.h"
 
 
 // ------------------------------------------------------------------
