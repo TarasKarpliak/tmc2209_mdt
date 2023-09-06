@@ -11,7 +11,25 @@
 //-------------------------------------------------------------------
 int main(void)
 {
-	while(1u);
+	CHIP_Init();
+
+	while(1u)
+	{
+		CHIP_SetIndicationPin();
+		MAIN_Delay();
+
+		CHIP_ResetIndicationPin();
+		MAIN_Delay();
+	}
 
 	return 0u;
+}
+
+
+//-------------------------------------------------------------------
+static void MAIN_Delay(void)
+{
+	volatile uint32_t timer = 1600000;
+
+	while(timer--);
 }
