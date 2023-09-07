@@ -7,12 +7,24 @@
 
 #include "sources/chip/chip_private.h"
 
+CHIP_t CHIP = {0};
 
 // ------------------------------------------------------------------
 void CHIP_Init(void)
 {
   CHIP_ClockInit();
   CHIP_GpioInit();
+
+  SysTick_Config(SystemCoreClock / 1000u);
+
+  CHIP_Reset();
+}
+
+
+// ------------------------------------------------------------------
+static void CHIP_Reset(void)
+{
+  memset(&CHIP, 0, sizeof(CHIP_t));
 }
 
 
@@ -56,6 +68,8 @@ static void CHIP_ClockInit(void)
   while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+
+  SystemCoreClockUpdate();
 }
 
 
@@ -78,3 +92,21 @@ void CHIP_ResetIndicationPin(void)
 {
 	GPIOB->BSRR |= GPIO_BSRR_BR0;
 }
+
+
+//-------------------------------------------------------------------
+void CHIP_Delay(uint32_t timeout_ms)
+{
+  CHIP.ticks_ms = 0u;
+
+  while (CHIP.ticks_ms < timeout_ms);
+}
+
+
+//-------------------------------------------------------------------
+void SysTick_Handler(void)
+{
+  CHIP.ticks_ms++;
+}
+
+
