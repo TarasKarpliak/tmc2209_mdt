@@ -29,7 +29,7 @@ int main(void)
 //-------------------------------------------------------------------
 static void MAIN_Delay(void)
 {
-	volatile uint32_t timer = 1600000;
+	volatile uint32_t timer = 16000000;
 
 	while(timer--);
 }
