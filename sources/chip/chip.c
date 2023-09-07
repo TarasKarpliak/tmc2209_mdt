@@ -19,21 +19,41 @@ void CHIP_Init(void)
 // ------------------------------------------------------------------
 static void CHIP_ClockInit(void)
 {
-  SETBIT(RCC->CR, RCC_CR_HSION_Pos); // HSI ON
+  // Disable the PLL to configure it
+  RCC->CR &= ~RCC_CR_PLLON;
 
-  RCC->PLLCFGR |= (uint32_t)8u << RCC_PLLCFGR_PLLM_Pos; // PLLM /8
-  RCC->PLLCFGR |= (uint32_t)216u << RCC_PLLCFGR_PLLN_Pos; // PLLN *216
+  // Wait until PLLRDY bit is cleared
+  while ((RCC->CR & RCC_CR_PLLRDY) != 0);
 
-  RCC->CFGR |= RCC_CFGR_PPRE1_DIV4;
-  RCC->CFGR |= RCC_CFGR_PPRE2_DIV2;
+  // Configure the PLL multiplication factor and division factors
+  RCC->PLLCFGR = (RCC->PLLCFGR & ~(RCC_PLLCFGR_PLLM | RCC_PLLCFGR_PLLN | RCC_PLLCFGR_PLLP | RCC_PLLCFGR_PLLQ)) |
+                 ((RCC_PLLCFGR_PLLSRC_HSI) |
+                  (16U << RCC_PLLCFGR_PLLM_Pos) |  // HSI frequency is divided by 2
+                  (432U << RCC_PLLCFGR_PLLN_Pos) | // Desired HCLK = 2 * PLLN = 216MHz
+                  (0u << RCC_PLLCFGR_PLLP_Pos) |
+                  (9u << RCC_PLLCFGR_PLLQ_Pos));
+
+  // Enable the PLL
+  RCC->CR |= RCC_CR_PLLON;
+
+  // Wait until PLLRDY bit is set
+  while ((RCC->CR & RCC_CR_PLLRDY) == 0);
+
+  // Configure the Flash latency and prefetch
+  FLASH->ACR &= ~FLASH_ACR_LATENCY;
+  FLASH->ACR |= FLASH_ACR_LATENCY_7WS;
+  FLASH->ACR |= FLASH_ACR_PRFTEN;
+
+  // Configure the AHB, APB1, and APB2 prescalers
+  RCC->CFGR &= ~(RCC_CFGR_HPRE | RCC_CFGR_PPRE1 | RCC_CFGR_PPRE2);
+  RCC->CFGR |= (RCC_CFGR_HPRE_DIV1 | RCC_CFGR_PPRE1_DIV4 | RCC_CFGR_PPRE2_DIV2);
+
+  // Select the PLL as the system clock source
+  RCC->CFGR &= ~RCC_CFGR_SW;
   RCC->CFGR |= RCC_CFGR_SW_PLL;
 
-  RCC->PLLSAICFGR |= (uint32_t)192u << RCC_PLLSAICFGR_PLLSAIN_Pos;
-  SETBIT(RCC->PLLSAICFGR, RCC_PLLSAICFGR_PLLSAIP_Pos);
-
-  SETBIT(RCC->DCKCFGR2, RCC_DCKCFGR2_CK48MSEL_Pos);
-
-  SETBIT(RCC->CR, RCC_CR_PLLON_Pos);
+  // Wait until the PLL is used as the system clock source
+  while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
 }
