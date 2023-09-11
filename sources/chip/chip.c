@@ -7,7 +7,6 @@
 
 #include "sources/chip/chip_private.h"
 
-CHIP_t CHIP = {0};
 
 // ------------------------------------------------------------------
 void CHIP_Init(void)
@@ -16,15 +15,6 @@ void CHIP_Init(void)
   CHIP_GpioInit();
 
   SysTick_Config(SystemCoreClock / 1000u);
-
-  CHIP_Reset();
-}
-
-
-// ------------------------------------------------------------------
-static void CHIP_Reset(void)
-{
-  memset(&CHIP, 0, sizeof(CHIP_t));
 }
 
 
@@ -77,36 +67,53 @@ static void CHIP_ClockInit(void)
 static void CHIP_GpioInit(void)
 {
 	GPIOB->MODER |= GPIO_MODER_MODER0_0;
+  GPIOB->MODER |= GPIO_MODER_MODER7_0;
+  GPIOB->MODER |= GPIO_MODER_MODER14_0;
 }
 
 
 // ------------------------------------------------------------------
-void CHIP_SetIndicationPin(void)
+void CHIP_SetGreenLedPin(void)
 {
 	GPIOB->BSRR |= GPIO_BSRR_BS0;
 }
 
 
 // ------------------------------------------------------------------
-void CHIP_ResetIndicationPin(void)
+void CHIP_ResetGreenLedPin(void)
 {
 	GPIOB->BSRR |= GPIO_BSRR_BR0;
 }
 
 
-//-------------------------------------------------------------------
-void CHIP_Delay(uint32_t timeout_ms)
+// ------------------------------------------------------------------
+void CHIP_SetBlueLedPin(void)
 {
-  CHIP.ticks_ms = 0u;
-
-  while (CHIP.ticks_ms < timeout_ms);
+  GPIOB->BSRR |= GPIO_BSRR_BS7;
 }
 
 
-//-------------------------------------------------------------------
-void SysTick_Handler(void)
+// ------------------------------------------------------------------
+void CHIP_ResetBlueLedPin(void)
 {
-  CHIP.ticks_ms++;
+  GPIOB->BSRR |= GPIO_BSRR_BR7;
 }
+
+// ------------------------------------------------------------------
+void CHIP_SetRedLedPin(void)
+{
+  GPIOB->BSRR |= GPIO_BSRR_BS14;
+}
+
+
+// ------------------------------------------------------------------
+void CHIP_ResetRedLedPin(void)
+{
+  GPIOB->BSRR |= GPIO_BSRR_BR14;
+}
+
+
+
+
 
 

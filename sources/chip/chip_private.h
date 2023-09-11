@@ -15,12 +15,6 @@
 #include "string.h"
 
 
-typedef struct
-{
-  volatile uint32_t ticks_ms;
-} CHIP_t;
-
-
 // ------------------------------------------------------------------
 /// @brief
 // ------------------------------------------------------------------
@@ -33,9 +27,5 @@ static void CHIP_ClockInit(void);
 static void CHIP_GpioInit(void);
 
 
-// ------------------------------------------------------------------
-/// @brief
-// ------------------------------------------------------------------
-static void CHIP_Reset(void);
 
 #endif // CHIP_PRIVATE_H

@@ -9,7 +9,9 @@ LD := arm-none-eabi-g++
 SRC_FILES := \
 	../../sources/main/main.c \
 	../../sources/system/system_stm32f7xx.c \
-	../../sources/chip/chip.c
+	../../sources/chip/chip.c \
+	../../sources/led_ctrl/led_ctrl.c \
+	../../sources/state_machine/state_machine.c \
 	
 INCLUDE_DIRS := \
 	../../CMSIS/Device/ST/STM32F7xx/Include \

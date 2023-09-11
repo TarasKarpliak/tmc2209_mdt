@@ -14,7 +14,7 @@
 typedef uint8_t bool_t;
 
 #ifndef NULL
-#define NULL  ((*void)0u)
+#define NULL  ((void*)0u)
 #endif
 
 #ifndef TRUE
@@ -36,6 +36,11 @@ typedef uint8_t bool_t;
 
 #ifndef CHECKBIT
 #define CHECKBIT(REG, BIT_NUM)     (((REG) & (1u << (BIT_NUM))) != 0u)
+#endif
+
+
+#ifndef ASSERT
+#define ASSERT(expression)     if ((bool_t)(expression) != TRUE) { while (TRUE); }
 #endif
 
 #endif // COMMON_DEF_H
