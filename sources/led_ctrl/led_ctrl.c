@@ -41,7 +41,7 @@ void LEDCTRL_Reset(void)
 
 void LEDCTRL_Update(void)
 {
-  LEDCTRL_IncrementUint32(&LEDCTRL.timer_ms);
+  COMMON_IncrementUint32(&LEDCTRL.timer_ms);
 
   switch (SM_GetState(&LEDCTRL.sm))
   {
@@ -95,14 +95,5 @@ void LEDCTRL_Update(void)
 
     default:
       break;
-  }
-}
-
-
-void LEDCTRL_IncrementUint32(uint32_t* counter_ptr)
-{
-  if (*counter_ptr < UINT32_MAX)
-  {
-    (*counter_ptr)++;
   }
 }

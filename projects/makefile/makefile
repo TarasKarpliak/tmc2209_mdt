@@ -12,6 +12,8 @@ SRC_FILES := \
 	../../sources/chip/chip.c \
 	../../sources/led_ctrl/led_ctrl.c \
 	../../sources/state_machine/state_machine.c \
+	../../sources/common_def/common_def.c \
+	../../sources/usart/usart.c \
 	
 INCLUDE_DIRS := \
 	../../CMSIS/Device/ST/STM32F7xx/Include \

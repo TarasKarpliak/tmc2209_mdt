@@ -19,6 +19,11 @@ int main(void)
 	  MAIN_WaitForUpdate();
 
 	  LEDCTRL_Update();
+
+	  if (CHECKBIT(USART1->ISR, USART_ISR_TXE_Pos) == TRUE)
+	  {
+	    USART1->TDR = 0xAA;
+	  }
 	}
 
 	return 0u;
@@ -27,6 +32,8 @@ int main(void)
 
 void MAIN_Init(void)
 {
+  MAIN.timer_ms = 0u;
+
   CHIP_Init();
 
   LEDCTRL_init_t ledctrl_init =
@@ -40,7 +47,7 @@ void MAIN_Init(void)
   };
   LEDCTRL_Init(&ledctrl_init);
 
-  MAIN.timer_ms = 0u;
+  USART_Init();
 }
 
 

@@ -43,4 +43,10 @@ typedef uint8_t bool_t;
 #define ASSERT(expression)     if ((bool_t)(expression) != TRUE) { while (TRUE); }
 #endif
 
+
+//-------------------------------------------------------------------
+/// @brief
+//-------------------------------------------------------------------
+void COMMON_IncrementUint32(uint32_t* counter_ptr);
+
 #endif // COMMON_DEF_H

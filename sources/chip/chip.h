@@ -39,4 +39,7 @@ void CHIP_SetRedLedPin(void);
 // ------------------------------------------------------------------
 void CHIP_ResetRedLedPin(void);
 
+// ------------------------------------------------------------------
+uint32_t CHIP_GetSysCoreClockHz(void);
+
 #endif // CHIP_H

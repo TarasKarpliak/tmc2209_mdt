@@ -57,7 +57,11 @@ static void CHIP_ClockInit(void)
   // Wait until the PLL is used as the system clock source
   while ((RCC->CFGR & RCC_CFGR_SWS) != RCC_CFGR_SWS_PLL);
 
+  RCC->DCKCFGR2 |= RCC_DCKCFGR2_USART1SEL_0; // System clock is selected as USART 1 clock
+
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
+  RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+  RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
   SystemCoreClockUpdate();
 }
@@ -69,6 +73,17 @@ static void CHIP_GpioInit(void)
 	GPIOB->MODER |= GPIO_MODER_MODER0_0;
   GPIOB->MODER |= GPIO_MODER_MODER7_0;
   GPIOB->MODER |= GPIO_MODER_MODER14_0;
+
+
+  // Configure PA9 as USART1 TX
+  GPIOA->MODER &= ~GPIO_MODER_MODER9_0; // Clear bits
+  GPIOA->MODER |= GPIO_MODER_MODER9_1;  // Set as alternate function
+
+  GPIOA->OTYPER |= GPIO_OTYPER_OT9; // Open-drain
+
+  // Configure the alternate function for PA9 (USART1_TX)
+  GPIOA->AFR[1] &= ~(0xF << (4 * (9 - 8))); // Clear AF bits
+  GPIOA->AFR[1] |= (7 << (4 * (9 - 8)));    // Set AF7 for USART1_TX
 }
 
 
@@ -112,6 +127,12 @@ void CHIP_ResetRedLedPin(void)
   GPIOB->BSRR |= GPIO_BSRR_BR14;
 }
 
+
+// ------------------------------------------------------------------
+uint32_t CHIP_GetSysCoreClockHz(void)
+{
+  return SystemCoreClock;
+}
 
 
 
