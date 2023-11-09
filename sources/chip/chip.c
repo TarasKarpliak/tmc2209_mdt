@@ -12,6 +12,7 @@
 void CHIP_Init(void)
 {
   CHIP_ClockInit();
+  CHIP_NvicInit();
   CHIP_GpioInit();
 
   SysTick_Config(SystemCoreClock / 1000u);
@@ -61,6 +62,7 @@ static void CHIP_ClockInit(void)
 
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOBEN;
   RCC->AHB1ENR |= RCC_AHB1ENR_GPIOAEN;
+  RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN;
   RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
 
   SystemCoreClockUpdate();
@@ -74,16 +76,21 @@ static void CHIP_GpioInit(void)
   GPIOB->MODER |= GPIO_MODER_MODER7_0;
   GPIOB->MODER |= GPIO_MODER_MODER14_0;
 
-
-  // Configure PA9 as USART1 TX
-  GPIOA->MODER &= ~GPIO_MODER_MODER9_0; // Clear bits
-  GPIOA->MODER |= GPIO_MODER_MODER9_1;  // Set as alternate function
-
-  GPIOA->OTYPER |= GPIO_OTYPER_OT9; // Open-drain
-
   // Configure the alternate function for PA9 (USART1_TX)
   GPIOA->AFR[1] &= ~(0xF << (4 * (9 - 8))); // Clear AF bits
   GPIOA->AFR[1] |= (7 << (4 * (9 - 8)));    // Set AF7 for USART1_TX
+  GPIOA->MODER |= GPIO_MODER_MODER9_1;      // Set as alternate function
+  GPIOA->OTYPER |= GPIO_OTYPER_OT9;         // Open-drain
+}
+
+
+// ------------------------------------------------------------------
+static void CHIP_NvicInit(void)
+{
+  NVIC_SetPriority(DMA2_Stream7_IRQn, 0); // Set Priority for DMA2
+  NVIC_EnableIRQ(DMA2_Stream7_IRQn);      // Enable interrupt
+  NVIC_SetPriority(DMA2_Stream2_IRQn, 0); // Set Priority for DMA2
+  NVIC_EnableIRQ(DMA2_Stream2_IRQn);      // Enable interrupt
 }
 
 

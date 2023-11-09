@@ -26,6 +26,7 @@ static void CHIP_ClockInit(void);
 // ------------------------------------------------------------------
 static void CHIP_GpioInit(void);
 
-
+// ------------------------------------------------------------------
+static void CHIP_NvicInit(void);
 
 #endif // CHIP_PRIVATE_H
