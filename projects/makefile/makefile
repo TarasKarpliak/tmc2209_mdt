@@ -14,6 +14,7 @@ SRC_FILES := \
 	../../sources/state_machine/state_machine.c \
 	../../sources/common_def/common_def.c \
 	../../sources/usart/usart.c \
+	../../sources/tmc2209/tmc2209.c \
 	
 INCLUDE_DIRS := \
 	../../CMSIS/Device/ST/STM32F7xx/Include \
