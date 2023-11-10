@@ -8,6 +8,7 @@
 #include "state_machine.h"
 
 
+//-------------------------------------------------------------------
 void SM_Init(SM_t* this_ptr, uint8_t init_state)
 {
   ASSERT(this_ptr != NULL);
@@ -16,6 +17,8 @@ void SM_Init(SM_t* this_ptr, uint8_t init_state)
   this_ptr->has_changed = TRUE;
 }
 
+
+//-------------------------------------------------------------------
 void SM_ChangeTo(SM_t* this_ptr, uint8_t new_state)
 {
   ASSERT(this_ptr != NULL);
@@ -23,6 +26,8 @@ void SM_ChangeTo(SM_t* this_ptr, uint8_t new_state)
   this_ptr->state = new_state;
 }
 
+
+//-------------------------------------------------------------------
 bool_t SM_HasChanged(SM_t* this_ptr)
 {
   ASSERT(this_ptr != NULL);
@@ -38,6 +43,8 @@ bool_t SM_HasChanged(SM_t* this_ptr)
   return result;
 }
 
+
+//-------------------------------------------------------------------
 uint8_t SM_GetState(SM_t* this_ptr)
 {
   ASSERT(this_ptr != NULL);

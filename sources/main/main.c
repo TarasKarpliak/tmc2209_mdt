@@ -14,11 +14,6 @@ int main(void)
 {
   MAIN_Init();
 
-  uint8_t data[15] = {0x12, 0x34, 0x56, 0x78, 0x90, 0xAB, 0xCD, 0xEF, 0x13, 0x46, 0x79, 0x0A, 0xBE, 0xF1};
-
-  USART_StartReception(8);
-
-  USART_StartTransmission((uint8_t*)(&data[0]), sizeof(data));
 	while(1u)
 	{
 	  MAIN_WaitForUpdate();
@@ -48,7 +43,6 @@ void MAIN_Init(void)
   LEDCTRL_Init(&ledctrl_init);
 
   USART_Init();
-  USART_InitDma();
 }
 
 
