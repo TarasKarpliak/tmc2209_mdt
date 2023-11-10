@@ -19,15 +19,11 @@ typedef struct
 } MAIN_t;
 
 
-void MAIN_Init(void);
-
-// ------------------------------------------------------------------
-/// @brief
 //-------------------------------------------------------------------
-void MAIN_DelayMs(uint32_t timeout_ms); ///< [ms] Wait timeout
+static void MAIN_Init(void);
 
-void MAIN_WaitForUpdate(void);
 
-uint32_t MAIN_GetTimeMs(void);
+//-------------------------------------------------------------------
+static void MAIN_WaitForUpdate(void);
 
 #endif /* MAIN_PRIVATE_H */

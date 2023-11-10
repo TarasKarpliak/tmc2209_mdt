@@ -7,8 +7,11 @@
 
 #include "led_ctrl_private.h"
 
+
 LEDCTRL_t LEDCTRL = {0};
 
+
+//-------------------------------------------------------------------
 void LEDCTRL_Init(LEDCTRL_init_t* init_ptr)
 {
   ASSERT(init_ptr != NULL);
@@ -29,71 +32,55 @@ void LEDCTRL_Init(LEDCTRL_init_t* init_ptr)
 }
 
 
+//-------------------------------------------------------------------
 void LEDCTRL_Reset(void)
 {
-  SM_Init(&LEDCTRL.sm, (uint8_t)LEDCTRL_STATE_INIT);
+  SM_Init(&LEDCTRL.sm, (uint8_t)LEDCTRL_STATE_RUNNING);
+
+  LEDCTRL.timeout_ms = 0u;
 
   RESETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED);
-  RESETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED2_ENABLED);
-  RESETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED3_ENABLED);
 }
 
 
+//-------------------------------------------------------------------
 void LEDCTRL_Update(void)
 {
-  COMMON_IncrementUint32(&LEDCTRL.timer_ms);
+  COMMON_IncrementUint32(&LEDCTRL.timeout_ms);
 
   switch (SM_GetState(&LEDCTRL.sm))
   {
-    case LEDCTRL_STATE_INIT:
+    case LEDCTRL_STATE_RUNNING:
       if (SM_HasChanged(&LEDCTRL.sm) == TRUE)
       {
-        LEDCTRL.timer_ms = 0u;
-
-        for (uint8_t led_num = 0u; led_num < LEDCTRL_LED_TOTAL; led_num++)
-        {
-          LEDCTRL.enable_led_ptr[led_num]();
-        }
+        LEDCTRL.timeout_ms = 0u;
       }
 
-      if (LEDCTRL.timer_ms >= LEDCTRL_STATE_INIT_TIMEOUT_MS)
+      if (LEDCTRL.timeout_ms >= (LEDCTRL_BLINKING_PERIOD_MS / 2u))
       {
-        for (uint8_t led_num = 0u; led_num < LEDCTRL_LED_TOTAL; led_num++)
-        {
-          LEDCTRL.disable_led_ptr[led_num]();
-        }
-
-        SM_ChangeTo(&LEDCTRL.sm, (uint8_t)LEDCTRL_STATE_NORMAL_OPERATION);
+        LEDCTRL.timeout_ms = 0u;
+        LEDCTRL_ToggleLed1();
       }
       break;
 
-    case LEDCTRL_STATE_NORMAL_OPERATION:
-      if (SM_HasChanged(&LEDCTRL.sm) == TRUE)
-      {
-        LEDCTRL.timer_ms = 0u;
-      }
-
-      if (LEDCTRL.timer_ms >= LEDCTRL_BLINKING_TIME_MS)
-      {
-        LEDCTRL.timer_ms = 0u;
-
-        if (CHECKBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED) == FALSE)
-        {
-          LEDCTRL.enable_led_ptr[LEDCTRL_IS_LED1_ENABLED]();
-          SETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED);
-        }
-        else
-        {
-          LEDCTRL.disable_led_ptr[LEDCTRL_IS_LED1_ENABLED]();
-          RESETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED);
-        }
-      }
-      break;
-
-    case LEDCTRL_STATE_ERROR:
-     break;
-
+    case LEDCTRL_STATE_TOTAL:
     default:
       break;
+  }
+}
+
+
+//-------------------------------------------------------------------
+static void LEDCTRL_ToggleLed1(void)
+{
+  if (CHECKBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED) == FALSE)
+  {
+    LEDCTRL.enable_led_ptr[LEDCTRL_LED_1]();
+    SETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED);
+  }
+  else
+  {
+    LEDCTRL.disable_led_ptr[LEDCTRL_LED_1]();
+    RESETBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED);
   }
 }

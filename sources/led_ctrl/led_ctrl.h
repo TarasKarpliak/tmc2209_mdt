@@ -13,8 +13,6 @@
 typedef enum
 {
   LEDCTRL_LED_1,
-  LEDCTRL_LED_2,
-  LEDCTRL_LED_3,
   LEDCTRL_LED_TOTAL,
 } LEDCTRL_led_name_t;
 
