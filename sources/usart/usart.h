@@ -56,4 +56,8 @@ USART_error_t USART_GetError(void);
 //-------------------------------------------------------------------
 USART_state_t USART_GetState(void);
 
+
+//-------------------------------------------------------------------
+void USART_GetReceivedData(uint8_t* buffer_ptr, uint8_t data_size);
+
 #endif /* USART_H */

@@ -24,6 +24,7 @@ void SM_ChangeTo(SM_t* this_ptr, uint8_t new_state)
   ASSERT(this_ptr != NULL);
 
   this_ptr->state = new_state;
+  this_ptr->has_changed = TRUE;
 }
 
 

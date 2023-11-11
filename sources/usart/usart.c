@@ -87,6 +87,16 @@ void USART_SetReceiveCompleteCb(USART_rx_complete_cb_ptr_t callback_ptr)
 
 
 //-------------------------------------------------------------------
+void USART_GetReceivedData(uint8_t* buffer_ptr, uint8_t data_size)
+{
+  if (data_size <= USART_MAX_MSG_LENGTH)
+  {
+    memcpy(buffer_ptr, &USART.rx_buffer[0u], data_size);
+  }
+}
+
+
+//-------------------------------------------------------------------
 static void USART_SetError(USART_error_t error)
 {
   USART.error = error;
@@ -112,7 +122,7 @@ static void USART_Usart1Init(void)
   USART1->CR3 &= ~(USART_CR3_SCEN); // must be cleared for Half duplex mode
   USART1->CR3 &= ~(USART_CR3_IREN); // must be cleared for Half duplex mode
 
-  USART1->BRR = CHIP_GetSysCoreClockHz() / 9600; // select baudrate
+  USART1->BRR = CHIP_GetSysCoreClockHz() / 4000000; // select baudrate
 
   USART1->CR1 |= USART_CR1_TE; // transmit enable
   USART1->CR1 |= USART_CR1_RE; // transmit enable

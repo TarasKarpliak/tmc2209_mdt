@@ -12,6 +12,7 @@
 #include "stdint.h"
 #include "sources/led_ctrl/led_ctrl.h"
 #include "sources/usart/usart.h"
+#include "tmc2209/tmc2209.h"
 
 typedef struct
 {

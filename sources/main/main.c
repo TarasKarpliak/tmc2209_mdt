@@ -21,6 +21,7 @@ int main(void)
 	  MAIN_WaitForUpdate();
 
 	  LEDCTRL_Update();
+	  TMC2209_Update();
 	}
 
 	return 0u;
@@ -41,6 +42,12 @@ static void MAIN_Init(void)
     .disable_led_ptr[LEDCTRL_LED_1] = CHIP_ResetGreenLedPin,
   };
   LEDCTRL_Init(&ledctrl_init);
+
+  TMC2209_init_t tmc2209_init =
+  {
+    .node_addr = 0x00,
+  };
+  TMC2209_Init(&tmc2209_init);
 }
 
 
