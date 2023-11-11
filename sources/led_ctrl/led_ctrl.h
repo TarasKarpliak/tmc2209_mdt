@@ -28,5 +28,6 @@ void LEDCTRL_Init(LEDCTRL_init_t* init_ptr);
 
 
 void LEDCTRL_Update(void);
-
+//-------------------------------------------------------------------
+void LEDCTRL_ToggleLed1(void);
 #endif /* LED_CTRL_H */

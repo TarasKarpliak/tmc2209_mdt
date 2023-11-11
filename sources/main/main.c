@@ -20,7 +20,7 @@ int main(void)
 	{
 	  MAIN_WaitForUpdate();
 
-	  LEDCTRL_Update();
+    LEDCTRL_Update();
 	  TMC2209_Update();
 	}
 
@@ -55,7 +55,9 @@ static void MAIN_Init(void)
 void MAIN_WaitForUpdate(void)
 {
   static uint32_t timestamp_begin = 0u;
+
   while (MAIN.timer_ms <= timestamp_begin);
+
   timestamp_begin = MAIN.timer_ms;
 }
 

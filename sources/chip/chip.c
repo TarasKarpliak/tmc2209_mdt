@@ -15,7 +15,7 @@ void CHIP_Init(void)
   CHIP_NvicInit();
   CHIP_GpioInit();
 
-  SysTick_Config(SystemCoreClock / 1000u);
+  SysTick_Config(218857); //(SystemCoreClock / 1000u + 12);
 }
 
 
@@ -105,33 +105,6 @@ void CHIP_SetGreenLedPin(void)
 void CHIP_ResetGreenLedPin(void)
 {
 	GPIOB->BSRR |= GPIO_BSRR_BR0;
-}
-
-
-// ------------------------------------------------------------------
-void CHIP_SetBlueLedPin(void)
-{
-  GPIOB->BSRR |= GPIO_BSRR_BS7;
-}
-
-
-// ------------------------------------------------------------------
-void CHIP_ResetBlueLedPin(void)
-{
-  GPIOB->BSRR |= GPIO_BSRR_BR7;
-}
-
-// ------------------------------------------------------------------
-void CHIP_SetRedLedPin(void)
-{
-  GPIOB->BSRR |= GPIO_BSRR_BS14;
-}
-
-
-// ------------------------------------------------------------------
-void CHIP_ResetRedLedPin(void)
-{
-  GPIOB->BSRR |= GPIO_BSRR_BR14;
 }
 
 

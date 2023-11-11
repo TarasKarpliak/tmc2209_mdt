@@ -43,7 +43,6 @@ void LEDCTRL_Reset(void);
 void LEDCTRL_IncrementUint32(uint32_t* counter_ptr);
 
 
-//-------------------------------------------------------------------
-static void LEDCTRL_ToggleLed1(void);
+
 
 #endif /* LED_CTRL_PRIVATE_H */

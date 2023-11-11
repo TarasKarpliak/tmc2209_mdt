@@ -71,7 +71,7 @@ void LEDCTRL_Update(void)
 
 
 //-------------------------------------------------------------------
-static void LEDCTRL_ToggleLed1(void)
+ void LEDCTRL_ToggleLed1(void)
 {
   if (CHECKBIT(LEDCTRL.status_bitmap, LEDCTRL_IS_LED1_ENABLED) == FALSE)
   {
