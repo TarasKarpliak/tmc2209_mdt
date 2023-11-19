@@ -24,6 +24,19 @@ void CHIP_SetGreenLedPin(void);
 // ------------------------------------------------------------------
 void CHIP_ResetGreenLedPin(void);
 
+// ------------------------------------------------------------------
+void CHIP_SetDirPin(void);
+
+
+// ------------------------------------------------------------------
+void CHIP_ResetDirPin(void);
+void CHIP_SetStepPin(void);
+// ------------------------------------------------------------------
+void CHIP_ResetStepPin(void);
+void CHIP_ChannelEnable(void);
+
+void CHIP_ChannelDisable(void);
+
 
 // ------------------------------------------------------------------
 uint32_t CHIP_GetSysCoreClockHz(void);

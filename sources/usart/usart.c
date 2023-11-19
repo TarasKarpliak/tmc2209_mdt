@@ -27,8 +27,8 @@ bool_t USART_StartTransmission(uint8_t* data_ptr, uint8_t data_size)
 {
   bool_t result = FALSE;
 
-  if ((SM_GetState(&USART.sm) == USART_STATE_IDLE) &&
-      (data_size <= USART_MAX_MSG_LENGTH))
+//  if ((SM_GetState(&USART.sm) == USART_STATE_IDLE) &&
+  if    (data_size <= USART_MAX_MSG_LENGTH)
   {
     memcpy(&USART.tx_buffer[0u], data_ptr, data_size);
 
@@ -37,7 +37,7 @@ bool_t USART_StartTransmission(uint8_t* data_ptr, uint8_t data_size)
     DMA2_Stream7->NDTR = data_size;
     DMA2_Stream7->CR |= DMA_SxCR_EN;
 
-    SM_ChangeTo(&USART.sm, USART_STATE_TX_IN_PROGRESS);
+//    SM_ChangeTo(&USART.sm, USART_STATE_TX_IN_PROGRESS);
     result = TRUE;
   }
 
@@ -50,8 +50,8 @@ bool_t USART_StartReception(uint8_t data_size)
 {
   bool_t result = FALSE;
 
-  if ((SM_GetState(&USART.sm) == USART_STATE_IDLE) &&
-      (data_size <= USART_MAX_MSG_LENGTH))
+//  if ((SM_GetState(&USART.sm) == USART_STATE_IDLE) &&
+  if    (data_size <= USART_MAX_MSG_LENGTH)
   {
     memset(&USART.rx_buffer[0u], 0u, USART_MAX_MSG_LENGTH);
 
@@ -60,7 +60,7 @@ bool_t USART_StartReception(uint8_t data_size)
     DMA2_Stream2->NDTR = data_size;
     DMA2_Stream2->CR |= DMA_SxCR_EN;
 
-    SM_ChangeTo(&USART.sm, USART_STATE_RX_IN_PROGRESS);
+//    SM_ChangeTo(&USART.sm, USART_STATE_RX_IN_PROGRESS);
     result = TRUE;
   }
 
@@ -122,7 +122,7 @@ static void USART_Usart1Init(void)
   USART1->CR3 &= ~(USART_CR3_SCEN); // must be cleared for Half duplex mode
   USART1->CR3 &= ~(USART_CR3_IREN); // must be cleared for Half duplex mode
 
-  USART1->BRR = CHIP_GetSysCoreClockHz() / 4000000; // select baudrate
+  USART1->BRR = CHIP_GetSysCoreClockHz() / 115200; // select baudrate
 
   USART1->CR1 |= USART_CR1_TE; // transmit enable
   USART1->CR1 |= USART_CR1_RE; // transmit enable

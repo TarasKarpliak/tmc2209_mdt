@@ -23,6 +23,7 @@ typedef struct
   USART_tx_complete_cb_ptr_t receive_complete_cb_ptr;
   uint8_t tx_buffer[USART_MAX_MSG_LENGTH];
   uint8_t rx_buffer[USART_MAX_MSG_LENGTH];
+  uint8_t bytes_to_transfer;
   USART_error_t error;
   SM_t sm;
 } USART_t;

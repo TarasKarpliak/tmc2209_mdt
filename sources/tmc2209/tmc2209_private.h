@@ -13,7 +13,11 @@
 #include "sources/state_machine/state_machine.h"
 #include "sources/usart/usart.h"
 
-#define TMC2209_SYNC_NIBBLE_MASK                ((uint8_t)0x0A)
+#include "sources/tmc2209/tmc2209_reg_general.h"
+
+#define TMC2209_IC_VERSION                      ((uint8_t)0x21)
+
+#define TMC2209_SYNC_NIBBLE_MASK                ((uint8_t)0x05)
 #define TMC2209_MASTER_ADDR_MASK                ((uint8_t)0xFF)
 
 #define TMC2209_BYTE_SYNC                       ((uint8_t)0x00)
@@ -35,6 +39,8 @@ typedef enum
   TMC2209_TRANSMIT_COMPLETE,
   TMC2209_RECEIVE_COMPLETE,
   TMC2209_RECEPTION_REQUESTED,
+  TMC2209_MOVE_FORWARD_REQUESTED,
+  TMC2209_MOVE_BACKWARD_REQUESTED,
 } TMC2209_status_bitmap_t;
 
 
@@ -44,7 +50,8 @@ typedef struct
   TMC2209_error_t error;
   SM_t sm;
   uint8_t status_bitmap;
-  uint8_t received_data[TCM2209_REPLY_TELEGRAM_SIZE];
+  uint8_t received_data[TCM2209_REPLY_TELEGRAM_SIZE + TMC2209_READ_REQUEST_TELEGRAM_SIZE];
+  uint32_t timer_ms;
 } TMC2209_t;
 
 
@@ -78,9 +85,16 @@ static void TMC2209_RequestData(uint8_t node_addr, uint8_t reg_addr);
 //-------------------------------------------------------------------
 static bool_t TMC2209_IsReceptionCompleted(void);
 
-//-------------------------------------------------------------------
-static bool_t TMC2209_CheckRequestedData(uint8_t reg_addr, uint32_t expected_data);
 
+static uint32_t TMC2209_GetReceivedData(void);
+
+//-------------------------------------------------------------------
+static bool_t TMC2209_CheckReceivedData(uint8_t reg_addr, uint32_t expected_data);
+
+
+static void TMC2209_EnableStepsGeeration(void);
+
+static void TMC2209_DisableStepsGeeration(void);
 
 //-------------------------------------------------------------------
 static void TMC2209_CalcCrc(uint8_t* datagram, uint8_t datagram_length);

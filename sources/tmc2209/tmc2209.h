@@ -14,14 +14,17 @@
 typedef struct
 {
   uint8_t node_addr;
+
 } TMC2209_init_t;
 
 
 typedef enum
 {
+  TMC2209_STATE_CHECK_VERSION,
   TMC2209_STATE_CONFIG,
   TMC2209_STATE_CHECK_CONFIG,
   TMC2209_STATE_IDLE,
+  TMC2209_STATE_ACTION,
   TMC2209_STATE_ERROR,
   TMC2209_STATE_TOTAL,
 } TMC2209_state_t;
@@ -33,6 +36,8 @@ typedef enum
   TMC2209_ERROR_TOTAL,
 } TMC2209_error_t;
 
+void TMC2209_MoveForward(uint32_t time_ms);
+void TMC2209_MoveBackward(uint32_t time_ms);
 
 //-------------------------------------------------------------------
 void TMC2209_Init(TMC2209_init_t* init_ptr);
@@ -52,5 +57,6 @@ TMC2209_state_t TMC2209_GetState(void);
 
 //-------------------------------------------------------------------
 TMC2209_error_t TMC2209_GetError(void);
+
 
 #endif /* TMC2209_H */
