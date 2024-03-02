@@ -1,0 +1,3 @@
+[submodule "sources/hal_driver"]
+	path = sources/hal_driver
+	url = git@github.com:STMicroelectronics/stm32f7xx_hal_driver.git
