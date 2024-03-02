@@ -24,6 +24,7 @@ typedef struct
 static void MAIN_Init(void);
 
 
+void MAIN_Delay(uint32_t time_ms);
 //-------------------------------------------------------------------
 static void MAIN_WaitForUpdate(void);
 

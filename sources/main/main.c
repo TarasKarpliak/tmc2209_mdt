@@ -10,7 +10,6 @@
 
 MAIN_t MAIN = {0};
 
-
 //-------------------------------------------------------------------
 int main(void)
 {
@@ -27,6 +26,13 @@ int main(void)
 	return 0u;
 }
 
+void MAIN_Delay(uint32_t time_ms)
+{
+  for (uint32_t itr = 0u; itr < time_ms; itr++)
+  {
+    MAIN_WaitForUpdate();
+  }
+}
 
 //-------------------------------------------------------------------
 static void MAIN_Init(void)

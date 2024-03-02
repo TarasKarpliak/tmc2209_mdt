@@ -12,6 +12,8 @@
 #include "string.h"
 #include "sources/chip/chip.h"
 #include "sources/state_machine/state_machine.h"
+#include "hal_driver/Inc/stm32f7xx_ll_usart.h"
+#include "hal_driver/Inc/stm32f7xx_ll_dma.h"
 
 
 #define USART_MAX_MSG_LENGTH ((uint32_t)32u) ///< Max message length that can be transmitted by USART
@@ -23,6 +25,7 @@ typedef struct
   USART_tx_complete_cb_ptr_t receive_complete_cb_ptr;
   uint8_t tx_buffer[USART_MAX_MSG_LENGTH];
   uint8_t rx_buffer[USART_MAX_MSG_LENGTH];
+  uint8_t bytes_to_transfer;
   USART_error_t error;
   SM_t sm;
 } USART_t;
