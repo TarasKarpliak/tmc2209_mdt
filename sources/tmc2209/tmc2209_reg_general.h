@@ -8,6 +8,15 @@
 #ifndef TMC2209_REG_GENERAL_H
 #define TMC2209_REG_GENERAL_H
 
+typedef enum
+{
+  TMC2209_REG_ADDR_GCONF = 0x00,
+  TMC2209_REG_ADDR_IOIN = 0x06,
+  TMC2209_REG_ADDR_IHOLD_I_RUN = 0x10,
+  TMC2209_REG_ADDR_TPOWER_DOWN = 0x11,
+  TMC2209_REG_ADDR_TOTAL,
+} TMC2209_reg_addr_t;
+
 //-------------------------------------------------------------------
 typedef struct
 {

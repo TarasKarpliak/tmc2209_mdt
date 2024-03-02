@@ -25,50 +25,44 @@ void TMC2209_Init(TMC2209_init_t* init_ptr)
 //-------------------------------------------------------------------
 void TMC2209_Reset(void)
 {
-  SM_Init(&TMC2209.sm, TMC2209_STATE_CHECK_VERSION);
+  SM_Init(&TMC2209.sm, TMC2209_STATE_WAKEUP);
 
   USART_SetTransmitCompleteCb(TMC2209_TransmitCompleteCb);
   USART_SetReceiveCompleteCb(TMC2209_ReceiveCompleteCb);
-
-  TMC2209.timer_ms = 100000u;
-  CHIP_SetDirPin();
 
   RESETBIT(TMC2209.status_bitmap, TMC2209_TRANSMIT_COMPLETE);
   RESETBIT(TMC2209.status_bitmap, TMC2209_RECEIVE_COMPLETE);
   RESETBIT(TMC2209.status_bitmap, TMC2209_RECEPTION_REQUESTED);
 
-  RESETBIT(TMC2209.status_bitmap, TMC2209_MOVE_FORWARD_REQUESTED);
-  RESETBIT(TMC2209.status_bitmap, TMC2209_MOVE_BACKWARD_REQUESTED);
-
   TMC2209_SetError(TMC2209_ERROR_NONE);
 }
 
-static volatile uint8_t flag = 0u;
-static volatile uint8_t count = 0u;
+
 //-------------------------------------------------------------------
 void TMC2209_Update(void)
 {
-
-  if (TMC2209.timer_ms != 0u)
-  {
-    TMC2209.timer_ms--;
-  }
   switch (TMC2209_GetState())
   {
+    case TMC2209_STATE_WAKEUP:
+      TMC2209_SetState(TMC2209_STATE_CHECK_VERSION);
+      break;
+
     case TMC2209_STATE_CHECK_VERSION:
       if (SM_HasChanged(&TMC2209.sm) == TRUE)
       {
-        TMC2209_RequestData(TMC2209.node_addr, 0x06);
+        TMC2209_RequestData(TMC2209.node_addr, TMC2209_REG_ADDR_IOIN);
       }
 
       if (TMC2209_IsReceptionCompleted() == TRUE)
       {
-        TMC2209_ioin_t reg_ioin = {0};
-        reg_ioin.value = TMC2209_GetReceivedData();
+        TMC2209_ioin_t reg_ioin =
+        {
+          .value = TMC2209_GetReceivedData(),
+        };
 
         if (reg_ioin.bitmap.version == TMC2209_IC_VERSION)
         {
-          TMC2209_SetState(TMC2209_STATE_CONFIG);
+          TMC2209_SetState(TMC2209_STATE_SET_GCONF);
         }
         else
         {
@@ -77,28 +71,138 @@ void TMC2209_Update(void)
       }
       break;
 
-    case TMC2209_STATE_CONFIG:
-//      if (SM_HasChanged(&TMC2209.sm) == TRUE)
-//      {
-//        TMC2209_SendData(TMC2209.node_addr, 0x00, 0x00D2);
-//      }
-//
-//      if (TMC2209_IsTransmissionCompleted() == TRUE)
-//      {
-//        TMC2209_SetState(TMC2209_STATE_CHECK_CONFIG);
-//      }
-//      TMC2209_SetState(TMC2209_STATE_CHECK_CONFIG);
-      break;
-
-    case TMC2209_STATE_CHECK_CONFIG:
+    case TMC2209_STATE_SET_GCONF:
       if (SM_HasChanged(&TMC2209.sm) == TRUE)
       {
-        TMC2209_RequestData(TMC2209.node_addr, 0x06);
+        TMC2209_gconf_t reg_gconf =
+        {
+          .bitmap.i_scale_analog   = 0u,
+          .bitmap.internal_r_sens  = 0u,
+          .bitmap.en_spread_cycle  = 0u,
+          .bitmap.shaft            = 0u,
+          .bitmap.index_otpw       = 1u,
+          .bitmap.index_step       = 0u,
+          .bitmap.pdn_disable      = 1u,
+          .bitmap.mstep_reg_select = 1u,
+          .bitmap.multistep_filt   = 1u,
+          .bitmap.test_mode        = 0u,
+        };
+
+        TMC2209_SendData(TMC2209.node_addr, TMC2209_REG_ADDR_GCONF, reg_gconf.value);
+      }
+
+      if (TMC2209_IsTransmissionCompleted() == TRUE)
+      {
+        TMC2209_SetState(TMC2209_STATE_CHECK_GCONF);
+      }
+      break;
+
+    case TMC2209_STATE_CHECK_GCONF:
+      if (SM_HasChanged(&TMC2209.sm) == TRUE)
+      {
+        TMC2209_RequestData(TMC2209.node_addr, TMC2209_REG_ADDR_GCONF);
       }
 
       if (TMC2209_IsReceptionCompleted() == TRUE)
       {
-        if (TMC2209_CheckReceivedData(0x00, 0x00D2) == TRUE)
+        TMC2209_gconf_t reg_gconf =
+        {
+          .bitmap.i_scale_analog   = 0u,
+          .bitmap.internal_r_sens  = 0u,
+          .bitmap.en_spread_cycle  = 0u,
+          .bitmap.shaft            = 0u,
+          .bitmap.index_otpw       = 1u,
+          .bitmap.index_step       = 0u,
+          .bitmap.pdn_disable      = 1u,
+          .bitmap.mstep_reg_select = 1u,
+          .bitmap.multistep_filt   = 1u,
+          .bitmap.test_mode        = 0u,
+        };
+        if (TMC2209_CheckReceivedData(TMC2209_REG_ADDR_GCONF, reg_gconf.value) == TRUE)
+        {
+          TMC2209_SetState(TMC2209_STATE_SET_IHOLD_IRUN);
+        }
+        else
+        {
+          TMC2209_SetState(TMC2209_STATE_ERROR);
+        }
+      }
+      break;
+
+    case TMC2209_STATE_SET_IHOLD_IRUN:
+      if (SM_HasChanged(&TMC2209.sm) == TRUE)
+      {
+        TMC2209_ihold_irun_t reg_ihold_irun =
+        {
+          .bitmap.i_hold        = 0u,
+          .bitmap.i_run         = 16u,
+          .bitmap.i_hold_delay  = 15u,
+        };
+
+        TMC2209_SendData(TMC2209.node_addr, TMC2209_REG_ADDR_IHOLD_I_RUN, reg_ihold_irun.value);
+      }
+
+      if (TMC2209_IsTransmissionCompleted() == TRUE)
+      {
+        TMC2209_SetState(TMC2209_STATE_CHECK_IHOLD_IRUN);
+      }
+      break;
+
+    case TMC2209_STATE_CHECK_IHOLD_IRUN:
+      if (SM_HasChanged(&TMC2209.sm) == TRUE)
+      {
+        TMC2209_RequestData(TMC2209.node_addr, TMC2209_REG_ADDR_IHOLD_I_RUN);
+      }
+
+      if (TMC2209_IsReceptionCompleted() == TRUE)
+      {
+        TMC2209_ihold_irun_t reg_ihold_irun =
+        {
+          .bitmap.i_hold        = 0u,
+          .bitmap.i_run         = 16u,
+          .bitmap.i_hold_delay  = 15u,
+        };
+        if (TMC2209_CheckReceivedData(TMC2209_REG_ADDR_IHOLD_I_RUN, reg_ihold_irun.value) == TRUE)
+        {
+          TMC2209_SetState(TMC2209_STATE_SET_TPOWER_DOWN);
+        }
+        else
+        {
+          TMC2209_SetState(TMC2209_STATE_ERROR);
+        }
+      }
+      break;
+
+    case TMC2209_STATE_SET_TPOWER_DOWN:
+      if (SM_HasChanged(&TMC2209.sm) == TRUE)
+      {
+        TMC2209_t_power_down_t reg_tpower_down =
+        {
+          .bitmap.t_power_down = 255u,
+        };
+
+        TMC2209_SendData(TMC2209.node_addr, TMC2209_REG_ADDR_TPOWER_DOWN, reg_tpower_down.value);
+      }
+
+      if (TMC2209_IsTransmissionCompleted() == TRUE)
+      {
+        TMC2209_SetState(TMC2209_STATE_CHECK_TPOWER_DOWN);
+      }
+      break;
+
+    case TMC2209_STATE_CHECK_TPOWER_DOWN:
+      if (SM_HasChanged(&TMC2209.sm) == TRUE)
+      {
+        TMC2209_RequestData(TMC2209.node_addr, TMC2209_REG_ADDR_TPOWER_DOWN);
+      }
+
+      if (TMC2209_IsReceptionCompleted() == TRUE)
+      {
+        TMC2209_t_power_down_t reg_tpower_down =
+        {
+          .bitmap.t_power_down = 255u,
+        };
+        if (TMC2209_CheckReceivedData(TMC2209_REG_ADDR_TPOWER_DOWN, reg_tpower_down.value) == TRUE)
         {
           TMC2209_SetState(TMC2209_STATE_IDLE);
         }
@@ -110,53 +214,6 @@ void TMC2209_Update(void)
       break;
 
     case TMC2209_STATE_IDLE:
-      if (SM_HasChanged(&TMC2209.sm) == TRUE)
-      {
-        TMC2209_DisableStepsGeeration();
-      }
-
-      if (CHECKBIT(TMC2209.status_bitmap, TMC2209_MOVE_FORWARD_REQUESTED) == TRUE)
-      {
-        RESETBIT(TMC2209.status_bitmap, TMC2209_MOVE_FORWARD_REQUESTED);
-        TMC2209_SetState(TMC2209_STATE_ACTION);
-        CHIP_SetDirPin();
-      }
-      else if (CHECKBIT(TMC2209.status_bitmap, TMC2209_MOVE_BACKWARD_REQUESTED) == TRUE)
-      {
-        RESETBIT(TMC2209.status_bitmap, TMC2209_MOVE_BACKWARD_REQUESTED);
-        TMC2209_SetState(TMC2209_STATE_ACTION);
-        CHIP_ResetDirPin();
-      }
-      break;
-
-    case TMC2209_STATE_ACTION:
-      if (count == 1)
-      {
-        count = 0u;
-        if (flag == 0u)
-        {
-          flag = 1u;
-          CHIP_SetStepPin();
-        }
-        else
-        {
-          flag = 0u;
-          CHIP_ResetStepPin();
-        }
-      }
-
-      count++;
-
-      if (TMC2209.timer_ms == 5000)
-      {
-        CHIP_ResetDirPin();
-      }
-
-      if (TMC2209.timer_ms == 0u)
-      {
-        TMC2209_SetState(TMC2209_STATE_IDLE);
-      }
-
       break;
 
     case TMC2209_STATE_ERROR:
@@ -166,26 +223,6 @@ void TMC2209_Update(void)
     default:
       break;
   }
-}
-
-void TMC2209_MoveForward(uint32_t time_ms)
-{
-  SETBIT(TMC2209.status_bitmap, TMC2209_MOVE_FORWARD_REQUESTED);
-}
-
-void TMC2209_MoveBackward(uint32_t time_ms)
-{
-  SETBIT(TMC2209.status_bitmap, TMC2209_MOVE_BACKWARD_REQUESTED);
-}
-
-static void TMC2209_EnableStepsGeeration(void)
-{
-
-}
-
-static void TMC2209_DisableStepsGeeration(void)
-{
-
 }
 
 
@@ -224,7 +261,8 @@ static void TMC2209_TransmitCompleteCb(void)
 
   if (CHECKBIT(TMC2209.status_bitmap, TMC2209_RECEPTION_REQUESTED) == TRUE)
   {
-//    USART_StartReception(TCM2209_REPLY_TELEGRAM_SIZE);
+//    USART_StartReception(TMC2209_READ_REQUEST_TELEGRAM_SIZE + TCM2209_REPLY_TELEGRAM_SIZE);
+    USART_StartReception(TCM2209_REPLY_TELEGRAM_SIZE);
   }
 }
 
@@ -247,7 +285,7 @@ static void TMC2209_ReceiveCompleteCb(void)
 
 
 //-------------------------------------------------------------------
-static void TMC2209_SendData(uint8_t node_addr, uint8_t reg_addr, uint32_t data)
+static void TMC2209_SendData(uint8_t node_addr, TMC2209_reg_addr_t reg_addr, uint32_t data)
 {
   uint8_t transmit_data[TMC2209_WRITE_TELEGRAM_SIZE] = {0u};
 
@@ -255,7 +293,7 @@ static void TMC2209_SendData(uint8_t node_addr, uint8_t reg_addr, uint32_t data)
 
   transmit_data[TMC2209_BYTE_SYNC]      = TMC2209_SYNC_NIBBLE_MASK;
   transmit_data[TMC2209_BYTE_NODE_ADDR] = node_addr;
-  transmit_data[TMC2209_BYTE_REG_ADDR]  = reg_addr | 0x80;
+  transmit_data[TMC2209_BYTE_REG_ADDR]  = (uint8_t)(reg_addr) | 0x80;
   transmit_data[TMC2209_DATA_BYTE_3]    = (uint8_t)((data >> 24u) & 0xFF);
   transmit_data[TMC2209_DATA_BYTE_2]    = (uint8_t)((data >> 16u) & 0xFF);
   transmit_data[TMC2209_DATA_BYTE_1]    = (uint8_t)((data >> 8u) & 0xFF);
@@ -282,7 +320,7 @@ static bool_t TMC2209_IsTransmissionCompleted(void)
 
 
 //-------------------------------------------------------------------
-static void TMC2209_RequestData(uint8_t node_addr, uint8_t reg_addr)
+static void TMC2209_RequestData(uint8_t node_addr, TMC2209_reg_addr_t reg_addr)
 {
   uint8_t transmit_data[TMC2209_READ_REQUEST_TELEGRAM_SIZE] = {0u};
 
@@ -291,11 +329,10 @@ static void TMC2209_RequestData(uint8_t node_addr, uint8_t reg_addr)
 
   transmit_data[TMC2209_BYTE_SYNC]      = TMC2209_SYNC_NIBBLE_MASK;
   transmit_data[TMC2209_BYTE_NODE_ADDR] = node_addr;
-  transmit_data[TMC2209_BYTE_REG_ADDR]  = reg_addr & 0x7F;
+  transmit_data[TMC2209_BYTE_REG_ADDR]  = (uint8_t)(reg_addr) & 0x7F;
 
   TMC2209_CalcCrc(&transmit_data[0], TMC2209_READ_REQUEST_TELEGRAM_SIZE);
 
-  USART_StartReception(TMC2209_READ_REQUEST_TELEGRAM_SIZE + TCM2209_REPLY_TELEGRAM_SIZE);
   USART_StartTransmission(&transmit_data[0], TMC2209_READ_REQUEST_TELEGRAM_SIZE);
 }
 

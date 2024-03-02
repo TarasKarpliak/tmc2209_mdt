@@ -27,17 +27,19 @@ bool_t USART_StartTransmission(uint8_t* data_ptr, uint8_t data_size)
 {
   bool_t result = FALSE;
 
-//  if ((SM_GetState(&USART.sm) == USART_STATE_IDLE) &&
-  if    (data_size <= USART_MAX_MSG_LENGTH)
+  if (data_size <= USART_MAX_MSG_LENGTH)
   {
+    DMA2_Stream7->CR &= (~DMA_SxCR_EN);
+
     memcpy(&USART.tx_buffer[0u], data_ptr, data_size);
 
-    DMA2_Stream7->CR &= (~DMA_SxCR_EN);
     DMA2_Stream7->M0AR = (uint32_t)&USART.tx_buffer[0u];
     DMA2_Stream7->NDTR = data_size;
+
+    USART1->CR1 &= ~USART_CR1_RE; // Receive disable
+
     DMA2_Stream7->CR |= DMA_SxCR_EN;
 
-//    SM_ChangeTo(&USART.sm, USART_STATE_TX_IN_PROGRESS);
     result = TRUE;
   }
 
@@ -50,17 +52,19 @@ bool_t USART_StartReception(uint8_t data_size)
 {
   bool_t result = FALSE;
 
-//  if ((SM_GetState(&USART.sm) == USART_STATE_IDLE) &&
-  if    (data_size <= USART_MAX_MSG_LENGTH)
+  if (data_size <= USART_MAX_MSG_LENGTH)
   {
-    memset(&USART.rx_buffer[0u], 0u, USART_MAX_MSG_LENGTH);
+    uint8_t clear_rdr = USART1->RDR;
+    (void)clear_rdr;
 
     DMA2_Stream2->CR &= (~DMA_SxCR_EN);
+
+    memset(&USART.rx_buffer[0u], 0u, USART_MAX_MSG_LENGTH);
+
     DMA2_Stream2->M0AR = (uint32_t)&USART.rx_buffer[0u];
     DMA2_Stream2->NDTR = data_size;
     DMA2_Stream2->CR |= DMA_SxCR_EN;
 
-//    SM_ChangeTo(&USART.sm, USART_STATE_RX_IN_PROGRESS);
     result = TRUE;
   }
 
@@ -125,7 +129,7 @@ static void USART_Usart1Init(void)
   USART1->BRR = CHIP_GetSysCoreClockHz() / 115200; // select baudrate
 
   USART1->CR1 |= USART_CR1_TE; // transmit enable
-  USART1->CR1 |= USART_CR1_RE; // transmit enable
+  USART1->CR1 |= USART_CR1_RE; // Receive enable
 
   USART1->CR3 |= USART_CR3_DMAR; // DMA enable receiver
   USART1->CR3 |= USART_CR3_DMAT; // DMA enable receiver
@@ -145,6 +149,7 @@ static void USART_DmaStream2Init(void)
   DMA2_Stream2->CR |= DMA_SxCR_MINC; // memory increment mode
   DMA2_Stream2->CR &= ~DMA_SxCR_PFCTRL; // peripheral flow controller (DMA is the flow controller)
   DMA2_Stream2->CR |= DMA_SxCR_TCIE; // TC interrupt enabled
+  DMA2_Stream2->FCR |= DMA_SxFCR_FTH; //  FIFO threshold (full FIFO)
   DMA2_Stream2->PAR = (uint32_t)&USART1->RDR;
 }
 
@@ -160,9 +165,11 @@ static void USART_DmaStream7Init(void)
   DMA2_Stream7->CR |= DMA_SxCR_MINC; // memory increment mode
   DMA2_Stream7->CR &= ~DMA_SxCR_PFCTRL; // peripheral flow controller (DMA is the flow controller)
   DMA2_Stream7->CR |= DMA_SxCR_TCIE; // TC interrupt enabled
+  DMA2_Stream7->FCR |= DMA_SxFCR_FTH; //  FIFO threshold (full FIFO)
   DMA2_Stream7->PAR = (uint32_t)&USART1->TDR;
 }
 
+//IRQ for an IDLE frame is received to aliminacte the case when the interrupt is called before the transaction is complete
 
 //-------------------------------------------------------------------
 void DMA2_Stream7_IRQHandler(void)
@@ -171,13 +178,9 @@ void DMA2_Stream7_IRQHandler(void)
   {
     DMA2->HIFCR |= DMA_HIFCR_CTCIF7;
 
-    if (SM_GetState(&USART.sm) == USART_STATE_TX_IN_PROGRESS)
-    {
-      SM_ChangeTo(&USART.sm, USART_STATE_IDLE);
-    }
-
     if (USART.transmit_complete_cb_ptr != NULL)
     {
+      USART1->CR1 |= USART_CR1_RE; // Receive enable
       USART.transmit_complete_cb_ptr();
     }
   }
@@ -190,11 +193,6 @@ void DMA2_Stream2_IRQHandler(void)
   if ((DMA2->LISR & DMA_LISR_TCIF2) != 0)
   {
     DMA2->LIFCR |= DMA_LIFCR_CTCIF2;
-
-    if (SM_GetState(&USART.sm) == USART_STATE_RX_IN_PROGRESS)
-    {
-      SM_ChangeTo(&USART.sm, USART_STATE_IDLE);
-    }
 
     if (USART.receive_complete_cb_ptr != NULL)
     {

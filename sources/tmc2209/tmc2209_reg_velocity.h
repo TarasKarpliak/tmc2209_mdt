@@ -16,7 +16,7 @@ typedef struct
   uint32_t i_run        : 5;
   uint32_t reserved_2   : 3;
   uint32_t i_hold_delay : 4;
-  uint32_t reserved_2   : 12;
+  uint32_t reserved_3   : 12;
 } TMC2209_ihold_irun_bitmap_t;
 
 typedef union
