@@ -29,16 +29,12 @@ bool_t USART_StartTransmission(uint8_t* data_ptr, uint8_t data_size)
 
   if (data_size <= USART_MAX_MSG_LENGTH)
   {
-    DMA2_Stream7->CR &= (~DMA_SxCR_EN);
-
     memcpy(&USART.tx_buffer[0u], data_ptr, data_size);
 
-    DMA2_Stream7->M0AR = (uint32_t)&USART.tx_buffer[0u];
-    DMA2_Stream7->NDTR = data_size;
+    LL_USART_DisableDirectionRx(USART1);
 
-    USART1->CR1 &= ~USART_CR1_RE; // Receive disable
-
-    DMA2_Stream7->CR |= DMA_SxCR_EN;
+    LL_DMA_SetDataLength(DMA2, LL_DMA_STREAM_7, data_size);
+    LL_DMA_EnableStream(DMA2, LL_DMA_STREAM_7);
 
     result = TRUE;
   }
@@ -54,16 +50,10 @@ bool_t USART_StartReception(uint8_t data_size)
 
   if (data_size <= USART_MAX_MSG_LENGTH)
   {
-    uint8_t clear_rdr = USART1->RDR;
-    (void)clear_rdr;
-
-    DMA2_Stream2->CR &= (~DMA_SxCR_EN);
-
     memset(&USART.rx_buffer[0u], 0u, USART_MAX_MSG_LENGTH);
 
-    DMA2_Stream2->M0AR = (uint32_t)&USART.rx_buffer[0u];
-    DMA2_Stream2->NDTR = data_size;
-    DMA2_Stream2->CR |= DMA_SxCR_EN;
+    LL_DMA_SetDataLength(DMA2, LL_DMA_STREAM_2, data_size);
+    LL_DMA_EnableStream(DMA2, LL_DMA_STREAM_2);
 
     result = TRUE;
   }
@@ -110,77 +100,97 @@ static void USART_SetError(USART_error_t error)
 //-------------------------------------------------------------------
 static void USART_Usart1Init(void)
 {
-  USART1->CR1 &= ~(USART_CR1_M_0); // 8bit
-  USART1->CR1 &= ~(USART_CR1_M_1); // 8bit
+  LL_USART_InitTypeDef init_struct =
+  {
+    .BaudRate            = 115200u,
+    .DataWidth           = LL_USART_DATAWIDTH_8B,
+    .StopBits            = LL_USART_STOPBITS_1,
+    .Parity              = LL_USART_PARITY_NONE,
+    .TransferDirection   = LL_USART_DIRECTION_TX_RX,
+    .HardwareFlowControl = LL_USART_HWCONTROL_NONE,
+    .OverSampling        = LL_USART_OVERSAMPLING_16,
+  };
+  ASSERT(LL_USART_Init(USART1, &init_struct) == SUCCESS)
 
-  USART1->CR2 &= ~(USART_CR2_STOP_0); // 1 stop bit
-  USART1->CR2 &= ~(USART_CR2_STOP_1); // 1 stop bit
+  LL_USART_ConfigHalfDuplexMode(USART1);
 
-  USART1->CR1 &= ~(USART_CR1_OVER8); // Oversampling by 16
+  LL_USART_EnableDMAReq_TX(USART1);
+  LL_USART_EnableDMAReq_RX(USART1);
 
-  USART1->CR1 &= ~(USART_CR1_PCE); // No parity
+  LL_USART_EnableIT_TC(USART1);
 
-  USART1->CR3 |= USART_CR3_HDSEL; // Half duplex mode is selected
-  USART1->CR2 &= ~(USART_CR2_LINEN); // must be cleared for Half duplex mode
-  USART1->CR2 &= ~(USART_CR2_CLKEN); // must be cleared for Half duplex mode
-  USART1->CR3 &= ~(USART_CR3_SCEN); // must be cleared for Half duplex mode
-  USART1->CR3 &= ~(USART_CR3_IREN); // must be cleared for Half duplex mode
+  LL_USART_Enable(USART1);
 
-  USART1->BRR = CHIP_GetSysCoreClockHz() / 115200; // select baudrate
-
-  USART1->CR1 |= USART_CR1_TE; // transmit enable
-  USART1->CR1 |= USART_CR1_RE; // Receive enable
-
-  USART1->CR3 |= USART_CR3_DMAR; // DMA enable receiver
-  USART1->CR3 |= USART_CR3_DMAT; // DMA enable receiver
-
-  USART1->CR1 |= USART_CR1_UE; // Enable USART
+  NVIC_SetPriority(USART1_IRQn, 0); // Set Priority for USART1
+  NVIC_EnableIRQ(USART1_IRQn);      // Enable interrupt
 }
 
 
 //-------------------------------------------------------------------
 static void USART_DmaStream2Init(void)
 {
-  DMA2_Stream2->CR |= DMA_SxCR_CHSEL_2; // channel 4 of DMA stream 2 (USART1_RX)
-  DMA2_Stream2->CR |= DMA_SxCR_PL_0 | DMA_SxCR_PL_1; // priority level (very high)
-  DMA2_Stream2->CR &= ~(DMA_SxCR_DIR_1 | DMA_SxCR_DIR_1); //  data transfer direction (peripheral-to-memory)
-  DMA2_Stream2->CR &= ~(DMA_SxCR_PSIZE_0 | DMA_SxCR_PSIZE_1); // peripheral data size (byte (8-bit)
-  DMA2_Stream2->CR &= ~(DMA_SxCR_MSIZE_0 | DMA_SxCR_MSIZE_1); // memory data size (byte (8-bit)
-  DMA2_Stream2->CR |= DMA_SxCR_MINC; // memory increment mode
-  DMA2_Stream2->CR &= ~DMA_SxCR_PFCTRL; // peripheral flow controller (DMA is the flow controller)
-  DMA2_Stream2->CR |= DMA_SxCR_TCIE; // TC interrupt enabled
-  DMA2_Stream2->FCR |= DMA_SxFCR_FTH; //  FIFO threshold (full FIFO)
-  DMA2_Stream2->PAR = (uint32_t)&USART1->RDR;
+  LL_DMA_InitTypeDef init_struct =
+  {
+    .PeriphOrM2MSrcAddress = (uint32_t)&USART1->RDR,
+    .MemoryOrM2MDstAddress = (uint32_t)&USART.rx_buffer[0u],
+    .Direction             = LL_DMA_DIRECTION_PERIPH_TO_MEMORY,
+    .Mode                  = LL_DMA_MODE_NORMAL,
+    .PeriphOrM2MSrcIncMode = LL_DMA_PERIPH_NOINCREMENT,
+    .MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT,
+    .PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE,
+    .MemoryOrM2MDstDataSize = LL_DMA_PDATAALIGN_BYTE,
+    .NbData                 = 0u,
+    .Channel                = LL_DMA_CHANNEL_4,
+    .Priority               = LL_DMA_PRIORITY_HIGH,
+    .FIFOMode               = LL_DMA_FIFOMODE_DISABLE,
+    .FIFOThreshold          = LL_DMA_FIFOTHRESHOLD_1_4,
+    .MemBurst               = LL_DMA_MBURST_SINGLE,
+    .PeriphBurst            = LL_DMA_PBURST_SINGLE,
+  };
+  ASSERT(LL_DMA_Init(DMA2, LL_DMA_STREAM_2, &init_struct) == SUCCESS)
+
+  LL_DMA_EnableIT_TC(DMA2, LL_DMA_STREAM_2);
 }
 
 
 //-------------------------------------------------------------------
 static void USART_DmaStream7Init(void)
 {
-  DMA2_Stream7->CR |= DMA_SxCR_CHSEL_2; // channel 4 of DMA stream 7 (USART1_TX)
-  DMA2_Stream7->CR |= DMA_SxCR_PL_0 | DMA_SxCR_PL_1; // priority level (very high)
-  DMA2_Stream7->CR |= DMA_SxCR_DIR_0; //  data transfer direction (memory-to-peripheral)
-  DMA2_Stream7->CR &= ~(DMA_SxCR_PSIZE_0 | DMA_SxCR_PSIZE_1); // peripheral data size (byte (8-bit)
-  DMA2_Stream7->CR &= ~(DMA_SxCR_MSIZE_0 | DMA_SxCR_MSIZE_1); // memory data size (byte (8-bit)
-  DMA2_Stream7->CR |= DMA_SxCR_MINC; // memory increment mode
-  DMA2_Stream7->CR &= ~DMA_SxCR_PFCTRL; // peripheral flow controller (DMA is the flow controller)
-  DMA2_Stream7->CR |= DMA_SxCR_TCIE; // TC interrupt enabled
-  DMA2_Stream7->FCR |= DMA_SxFCR_FTH; //  FIFO threshold (full FIFO)
-  DMA2_Stream7->PAR = (uint32_t)&USART1->TDR;
+  LL_DMA_InitTypeDef init_struct =
+  {
+    .PeriphOrM2MSrcAddress = (uint32_t)&USART1->TDR,
+    .MemoryOrM2MDstAddress = (uint32_t)&USART.tx_buffer[0u],
+    .Direction             = LL_DMA_DIRECTION_MEMORY_TO_PERIPH,
+    .Mode                  = LL_DMA_MODE_NORMAL,
+    .PeriphOrM2MSrcIncMode = LL_DMA_PERIPH_NOINCREMENT,
+    .MemoryOrM2MDstIncMode = LL_DMA_MEMORY_INCREMENT,
+    .PeriphOrM2MSrcDataSize = LL_DMA_PDATAALIGN_BYTE,
+    .MemoryOrM2MDstDataSize = LL_DMA_PDATAALIGN_BYTE,
+    .NbData                 = 0u,
+    .Channel                = LL_DMA_CHANNEL_4,
+    .Priority               = LL_DMA_PRIORITY_HIGH,
+    .FIFOMode               = LL_DMA_FIFOMODE_DISABLE,
+    .FIFOThreshold          = LL_DMA_FIFOTHRESHOLD_1_4,
+    .MemBurst               = LL_DMA_MBURST_SINGLE,
+    .PeriphBurst            = LL_DMA_PBURST_SINGLE,
+  };
+  ASSERT(LL_DMA_Init(DMA2, LL_DMA_STREAM_7, &init_struct) == SUCCESS)
+
+  LL_DMA_EnableIT_TC(DMA2, LL_DMA_STREAM_7);
 }
 
-//IRQ for an IDLE frame is received to aliminacte the case when the interrupt is called before the transaction is complete
 
 //-------------------------------------------------------------------
-void DMA2_Stream7_IRQHandler(void)
+void USART1_IRQHandler(void)
 {
-  if ((DMA2->HISR & DMA_HISR_TCIF7) != 0)
+  if (LL_USART_IsActiveFlag_TC(USART1) != 0u)
   {
-    DMA2->HIFCR |= DMA_HIFCR_CTCIF7;
+    LL_USART_ClearFlag_TC(USART1);
+
+    LL_USART_EnableDirectionRx(USART1);
 
     if (USART.transmit_complete_cb_ptr != NULL)
     {
-      USART1->CR1 |= USART_CR1_RE; // Receive enable
       USART.transmit_complete_cb_ptr();
     }
   }
@@ -188,11 +198,23 @@ void DMA2_Stream7_IRQHandler(void)
 
 
 //-------------------------------------------------------------------
+void DMA2_Stream7_IRQHandler(void)
+{
+  if (LL_DMA_IsActiveFlag_TC7(DMA2) != 0u)
+  {
+    LL_DMA_ClearFlag_TC7(DMA2);
+    LL_DMA_DisableStream(DMA2, LL_DMA_STREAM_7);
+  }
+}
+
+
+//-------------------------------------------------------------------
 void DMA2_Stream2_IRQHandler(void)
 {
-  if ((DMA2->LISR & DMA_LISR_TCIF2) != 0)
+  if (LL_DMA_IsActiveFlag_TC2(DMA2) != 0u)
   {
-    DMA2->LIFCR |= DMA_LIFCR_CTCIF2;
+    LL_DMA_ClearFlag_TC2(DMA2);
+    LL_DMA_DisableStream(DMA2, LL_DMA_STREAM_2);
 
     if (USART.receive_complete_cb_ptr != NULL)
     {

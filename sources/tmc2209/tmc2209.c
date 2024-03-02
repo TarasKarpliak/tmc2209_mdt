@@ -144,32 +144,7 @@ void TMC2209_Update(void)
 
       if (TMC2209_IsTransmissionCompleted() == TRUE)
       {
-        TMC2209_SetState(TMC2209_STATE_CHECK_IHOLD_IRUN);
-      }
-      break;
-
-    case TMC2209_STATE_CHECK_IHOLD_IRUN:
-      if (SM_HasChanged(&TMC2209.sm) == TRUE)
-      {
-        TMC2209_RequestData(TMC2209.node_addr, TMC2209_REG_ADDR_IHOLD_I_RUN);
-      }
-
-      if (TMC2209_IsReceptionCompleted() == TRUE)
-      {
-        TMC2209_ihold_irun_t reg_ihold_irun =
-        {
-          .bitmap.i_hold        = 0u,
-          .bitmap.i_run         = 16u,
-          .bitmap.i_hold_delay  = 15u,
-        };
-        if (TMC2209_CheckReceivedData(TMC2209_REG_ADDR_IHOLD_I_RUN, reg_ihold_irun.value) == TRUE)
-        {
-          TMC2209_SetState(TMC2209_STATE_SET_TPOWER_DOWN);
-        }
-        else
-        {
-          TMC2209_SetState(TMC2209_STATE_ERROR);
-        }
+        TMC2209_SetState(TMC2209_STATE_SET_TPOWER_DOWN);
       }
       break;
 
@@ -186,30 +161,7 @@ void TMC2209_Update(void)
 
       if (TMC2209_IsTransmissionCompleted() == TRUE)
       {
-        TMC2209_SetState(TMC2209_STATE_CHECK_TPOWER_DOWN);
-      }
-      break;
-
-    case TMC2209_STATE_CHECK_TPOWER_DOWN:
-      if (SM_HasChanged(&TMC2209.sm) == TRUE)
-      {
-        TMC2209_RequestData(TMC2209.node_addr, TMC2209_REG_ADDR_TPOWER_DOWN);
-      }
-
-      if (TMC2209_IsReceptionCompleted() == TRUE)
-      {
-        TMC2209_t_power_down_t reg_tpower_down =
-        {
-          .bitmap.t_power_down = 255u,
-        };
-        if (TMC2209_CheckReceivedData(TMC2209_REG_ADDR_TPOWER_DOWN, reg_tpower_down.value) == TRUE)
-        {
-          TMC2209_SetState(TMC2209_STATE_IDLE);
-        }
-        else
-        {
-          TMC2209_SetState(TMC2209_STATE_ERROR);
-        }
+        TMC2209_SetState(TMC2209_STATE_IDLE);
       }
       break;
 
@@ -270,17 +222,12 @@ static void TMC2209_TransmitCompleteCb(void)
 //-------------------------------------------------------------------
 static void TMC2209_ReceiveCompleteCb(void)
 {
-  memset(&TMC2209.received_data[0u], 0, TCM2209_REPLY_TELEGRAM_SIZE + TMC2209_READ_REQUEST_TELEGRAM_SIZE);
+  memset(&TMC2209.received_data[0u], 0, TCM2209_REPLY_TELEGRAM_SIZE);
 
   SETBIT(TMC2209.status_bitmap, TMC2209_RECEIVE_COMPLETE);
   RESETBIT(TMC2209.status_bitmap, TMC2209_RECEPTION_REQUESTED);
 
-  USART_GetReceivedData(&TMC2209.received_data[0u],
-                        TMC2209_READ_REQUEST_TELEGRAM_SIZE + TCM2209_REPLY_TELEGRAM_SIZE);
-  memmove(&TMC2209.received_data[0u],
-          &TMC2209.received_data[TMC2209_READ_REQUEST_TELEGRAM_SIZE],
-          TCM2209_REPLY_TELEGRAM_SIZE);
-  memset(&TMC2209.received_data[TCM2209_REPLY_TELEGRAM_SIZE], 0, TMC2209_READ_REQUEST_TELEGRAM_SIZE);
+  USART_GetReceivedData(&TMC2209.received_data[0u], TCM2209_REPLY_TELEGRAM_SIZE);
 }
 
 

@@ -104,6 +104,9 @@ static void CHIP_GpioInit(void)
   GPIOE->AFR[1] |= (1 << (4 * (9 - 8)));
   GPIOE->MODER |= GPIO_MODER_MODER9_1; // Alternate function mode
   GPIOE->OTYPER &= ~GPIO_OTYPER_OT9;        // Push-pull
+
+  GPIOA->MODER |= GPIO_MODER_MODER0_0;  // Alternate function mode
+  GPIOA->OTYPER &= ~GPIO_OTYPER_OT0;     // Push-pull
 }
 
 
@@ -143,6 +146,7 @@ void CHIP_ChannelDisable(void)
 // ------------------------------------------------------------------
 static void CHIP_NvicInit(void)
 {
+
   NVIC_SetPriority(DMA2_Stream7_IRQn, 0); // Set Priority for DMA2
   NVIC_EnableIRQ(DMA2_Stream7_IRQn);      // Enable interrupt
 

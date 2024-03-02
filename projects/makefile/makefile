@@ -15,10 +15,14 @@ SRC_FILES := \
 	../../sources/common_def/common_def.c \
 	../../sources/usart/usart.c \
 	../../sources/tmc2209/tmc2209.c \
+	../../sources/hal_driver/Src/stm32f7xx_ll_usart.c \
+	../../sources/hal_driver/Src/stm32f7xx_ll_rcc.c \
+	../../sources/hal_driver/Src/stm32f7xx_ll_dma.c \
 	
 INCLUDE_DIRS := \
 	../../CMSIS/Device/ST/STM32F7xx/Include \
 	../../CMSIS/Core/Include \
+	../../sources/hal_driver/Inc \
 	../../sources \
 	../../
 
@@ -32,7 +36,7 @@ OBJ_DIR   := $(BUILD_DIR)/obj
 # Compiler flags
 CFLAGS := -mcpu=cortex-m7 -mthumb -mfloat-abi=soft -Og -fmessage-length=0 \
 	-fsigned-char -ffunction-sections -fdata-sections -ffreestanding \
-	-fno-move-loop-invariants -Wall -Wextra -g3 -DDEBUG -DSTM32F767xx -std=gnu11 -MMD -MP \
+	-fno-move-loop-invariants -Wall -Wextra -g3 -DDEBUG -DSTM32F767xx -DUSE_FULL_LL_DRIVER -std=gnu11 -MMD -MP \
 	$(addprefix -I,$(INCLUDE_DIRS))
 
 # Linker flags
