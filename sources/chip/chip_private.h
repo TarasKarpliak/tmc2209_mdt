@@ -11,6 +11,8 @@
 #include "sources/chip/chip.h"
 
 #include "system_stm32f7xx.h"
+#include "hal_driver/Inc/stm32f7xx_ll_tim.h"
+#include "hal_driver/Inc/stm32f7xx_ll_rcc.h"
 
 #include "string.h"
 

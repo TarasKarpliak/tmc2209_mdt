@@ -15,6 +15,7 @@ int main(void)
 {
   MAIN_Init();
 
+
 	while(TRUE)
 	{
 	  MAIN_WaitForUpdate();

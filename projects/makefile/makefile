@@ -18,6 +18,7 @@ SRC_FILES := \
 	../../sources/hal_driver/Src/stm32f7xx_ll_usart.c \
 	../../sources/hal_driver/Src/stm32f7xx_ll_rcc.c \
 	../../sources/hal_driver/Src/stm32f7xx_ll_dma.c \
+	../../sources/hal_driver/Src/stm32f7xx_ll_tim.c \
 	
 INCLUDE_DIRS := \
 	../../CMSIS/Device/ST/STM32F7xx/Include \

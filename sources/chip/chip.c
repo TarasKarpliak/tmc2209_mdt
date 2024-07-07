@@ -72,6 +72,14 @@ static void CHIP_ClockInit(void)
   RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
   RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
 
+  LL_RCC_ClocksTypeDef clocks = {0};
+  LL_RCC_GetSystemClocksFreq(&clocks);
+
+  ASSERT(clocks.SYSCLK_Frequency == 216000000u);
+  ASSERT(clocks.HCLK_Frequency   == 216000000u);
+  ASSERT(clocks.PCLK1_Frequency  == 54000000u);
+  ASSERT(clocks.PCLK2_Frequency  == 108000000u);
+
   SystemCoreClockUpdate();
 }
 
@@ -111,49 +119,105 @@ static void CHIP_GpioInit(void)
 
 
 // ------------------------------------------------------------------
-static void CHIP_TimerInit(void)
+ void CHIP_TimerInit(void)
 {
-  // Configure TIM1 for PWM1 mode
-  TIM1->CR1 &= ~TIM_CR1_DIR; // Count up mode
-  TIM1->CR1 &= ~TIM_CR1_CMS; // Edge-aligned mode
-  TIM1->CCMR1 &= ~TIM_CCMR1_OC1M; // Clear OC1M bits for PWM mode 1
-  TIM1->CCMR1 |= TIM_CCMR1_OC1M_1 | TIM_CCMR1_OC1M_2; // Set OC1M bits for PWM1 mode
-  TIM1->CCER &= ~TIM_CCER_CC1P; // Non-inverted PWM signal on CH1
-  TIM1->CCER |= TIM_CCER_CC1E; // Enable CH1
+  LL_TIM_InitTypeDef tim_init =
+  {
+    .Prescaler = 0,
+    .CounterMode = LL_TIM_COUNTERMODE_UP,
+    .Autoreload = 216u,
+    .ClockDivision = LL_TIM_CLOCKDIVISION_DIV1,
+    .RepetitionCounter = 0x00,
+  };
+  ASSERT(LL_TIM_Init(TIM1, &tim_init) == SUCCESS)
 
-  // Assuming you have a pre-defined period value (adjust as needed)
-  TIM1->ARR = 65000; // Example: 1 kHz PWM frequency
+  LL_TIM_OC_InitTypeDef oc_init =
+  {
+    .OCMode = LL_TIM_OCMODE_PWM1,
+    .OCState = LL_TIM_OCSTATE_ENABLE,
+    .OCNState = LL_TIM_OCSTATE_DISABLE,
+    .CompareValue = tim_init.Autoreload / 2u,
+    .OCPolarity = LL_TIM_OCPOLARITY_HIGH,
+    .OCNPolarity = LL_TIM_OCPOLARITY_LOW,
+    .OCIdleState = LL_TIM_OCIDLESTATE_LOW,
+    .OCNIdleState = LL_TIM_OCIDLESTATE_HIGH,
+  };
+  ASSERT(LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH1, &oc_init) == SUCCESS)
 
-  // Assuming you have a pre-defined duty cycle value (adjust as needed)
-  TIM1->CCR1 = 30000; // Example: 50% duty cycle
-
-  // Enable the timer
-  TIM1->CR1 |= TIM_CR1_CEN;
+  LL_TIM_EnableIT_CC1(TIM1);
+  LL_TIM_EnableAllOutputs(TIM1);
 }
-
-void CHIP_ChannelEnable(void)
-{
-    TIM1->CCER |= TIM_CCER_CC1E;
-}
-
-void CHIP_ChannelDisable(void)
-{
-    TIM1->CCER &= ~TIM_CCER_CC1E;
-}
-
 
 
 // ------------------------------------------------------------------
 static void CHIP_NvicInit(void)
 {
-
   NVIC_SetPriority(DMA2_Stream7_IRQn, 0); // Set Priority for DMA2
   NVIC_EnableIRQ(DMA2_Stream7_IRQn);      // Enable interrupt
 
   NVIC_SetPriority(DMA2_Stream2_IRQn, 0); // Set Priority for DMA2
   NVIC_EnableIRQ(DMA2_Stream2_IRQn);      // Enable interrupt
+
+  NVIC_SetPriority(TIM1_CC_IRQn, 1); // Set Priority for DMA2
+  NVIC_EnableIRQ(TIM1_CC_IRQn);      // Enable interrupt
 }
 
+
+
+#define MOTTOR_FULL_STEP_ANGLE_0_1_DEGREES     ((uint32_t) 18u)     // [0.1 degrees] Angle of one full step
+#define MOTTOR_PULLEY_OUTER_DIAMETER_MM        ((uint32_t) 16u)     // [mm] Outer diameter of the motor pulley
+
+#define TMC2209_MICROSTEP_PRESCALER            ((uint32_t) 256u)      // Micro-step resolution
+
+#define PI_MUL_BY_10_POW_6                     ((uint32_t) 3141592u) // 3.141592 represented in fixed-point format with 7 decimal places
+#define HALF_CIRCLE_ANGLE_DEGREES              ((uint32_t) 180u)
+#define MAX_DISTANCE_0_1_MM                    ((uint32_t) (30u * 10u * 10u))
+
+static uint32_t steps_left = 0u;
+
+// ------------------------------------------------------------------
+void CHIP_MoveForward(uint16_t distance_0_1_mm, uint16_t speed_mm_per_s)
+{
+  // L [nm] = (PI * r [nm] * α) / 180 = (PI * 10^6 * d [mm] * 10^6 * α * 10) / 10^6 / 2 / 180 / 10 = (PI * 10^6 * d [mm] * α * 10) / 2 / 180 / 10
+  uint32_t one_step_length_nm = (uint32_t)((PI_MUL_BY_10_POW_6 * MOTTOR_FULL_STEP_ANGLE_0_1_DEGREES * MOTTOR_PULLEY_OUTER_DIAMETER_MM) /
+                                (2u * 10 * HALF_CIRCLE_ANGLE_DEGREES * TMC2209_MICROSTEP_PRESCALER));
+
+  if (distance_0_1_mm <= MAX_DISTANCE_0_1_MM)
+  {
+    uint32_t num_of_steps =  (distance_0_1_mm * 100000u * TMC2209_MICROSTEP_PRESCALER) / one_step_length_nm;
+
+    if ((distance_0_1_mm * 100000u * TMC2209_MICROSTEP_PRESCALER) % one_step_length_nm >= 5u)
+    {
+      num_of_steps++;
+    }
+    steps_left = num_of_steps;
+  }
+
+  uint32_t step_frequency_khz = (uint32_t)(((uint64_t)1000000000u * (uint64_t)speed_mm_per_s) / one_step_length_nm);
+
+  LL_TIM_SetPrescaler(TIM1, (uint32_t)(1000000000u / step_frequency_khz) - 1u);
+  LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH1);
+  LL_TIM_EnableCounter(TIM1);
+}
+
+
+void TIM1_CC_IRQHandler(void)
+{
+  if (LL_TIM_IsActiveFlag_CC1(TIM1) != 0u)
+  {
+    LL_TIM_ClearFlag_CC1(TIM1);
+
+    if (steps_left > 0u)
+    {
+      steps_left--;
+    }
+    else
+    {
+      LL_TIM_DisableCounter(TIM1);
+      LL_TIM_CC_DisableChannel(TIM1, LL_TIM_CHANNEL_CH1);
+    }
+  }
+}
 
 // ------------------------------------------------------------------
 void CHIP_SetGreenLedPin(void)

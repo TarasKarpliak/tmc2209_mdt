@@ -162,6 +162,8 @@ void TMC2209_Update(void)
       if (TMC2209_IsTransmissionCompleted() == TRUE)
       {
         TMC2209_SetState(TMC2209_STATE_IDLE);
+
+        CHIP_MoveForward(3000u, 150);
       }
       break;
 
